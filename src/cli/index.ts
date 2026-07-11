@@ -46,6 +46,7 @@ function failWithError(error: unknown): never {
 
 program
   .command("clone <repo> [name]")
+  .alias("c")
   .description("Create a bare clone of a repository")
   .action(async (repo: string, name?: string) => {
     try {
@@ -65,6 +66,7 @@ program
 
 program
   .command("add <branch>")
+  .alias("a")
   .description("Add a worktree for a branch")
   .option("--new", "Create a new branch before adding the worktree")
   .action(async (branch: string, options: { new?: boolean }) => {
@@ -83,6 +85,7 @@ program
 
 program
   .command("list")
+  .alias("l")
   .description("List all active worktrees")
   .action(async () => {
     try {
@@ -95,6 +98,7 @@ program
 
 program
   .command("remove <branch>")
+  .alias("r")
   .description("Remove a worktree (does not delete the branch)")
   .option("--force", "Force removal even with uncommitted changes")
   .action(async (branch: string, options: { force?: boolean }) => {
