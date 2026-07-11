@@ -3,4 +3,5 @@ export { CloneCommand } from "./clone.js";
 export * from "./errors.js";
 export { ListCommand } from "./list.js";
 export * from "./model.js";
+export { PruneCommand } from "./prune.js";
 export { RemoveCommand } from "./remove.js";

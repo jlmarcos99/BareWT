@@ -6,6 +6,7 @@ import { Command } from "commander";
 import { AddCommand } from "../core/add.js";
 import { CloneCommand } from "../core/clone.js";
 import { ListCommand } from "../core/list.js";
+import { PruneCommand } from "../core/prune.js";
 import { RemoveCommand } from "../core/remove.js";
 
 function resolvePackageRoot(fromDir: string): string {
@@ -111,6 +112,35 @@ program
       failWithError(error);
     }
   });
+
+program
+  .command("prune")
+  .description("Remove orphan worktrees whose branches were deleted on origin")
+  .option("--dry-run", "Show what would be removed without doing it")
+  .option("--yes", "Skip confirmation prompts")
+  .option("--keep-branches", "Keep local branches after removing worktrees")
+  .option("--force", "Force removal of dirty worktrees")
+  .action(
+    async (options: {
+      dryRun?: boolean;
+      yes?: boolean;
+      keepBranches?: boolean;
+      force?: boolean;
+    }) => {
+      try {
+        const cmd = new PruneCommand();
+        const results = await cmd.execute(process.cwd(), options);
+        for (const line of results) {
+          process.stdout.write(`${line}\n`);
+        }
+        if (results.length === 0) {
+          process.stdout.write("Nothing to prune.\n");
+        }
+      } catch (error) {
+        failWithError(error);
+      }
+    },
+  );
 
 export function run(argv = process.argv): void {
   program.parse(argv);
