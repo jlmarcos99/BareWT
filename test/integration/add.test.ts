@@ -1,4 +1,4 @@
-import { mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chdir, cwd } from "node:process";
@@ -25,6 +25,7 @@ async function initBareWithRemotes(base: string) {
   });
 
   const bareDir = join(base, "proj", ".git");
+  mkdirSync(join(base, "proj"), { recursive: true });
   await execa("git", ["clone", "--bare", repoDir, bareDir]);
   await execa("git", [
     "-C",

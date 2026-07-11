@@ -6,6 +6,7 @@ import { Command } from "commander";
 import { AddCommand } from "../core/add.js";
 import { CloneCommand } from "../core/clone.js";
 import { ListCommand } from "../core/list.js";
+import { RemoveCommand } from "../core/remove.js";
 
 function resolvePackageRoot(fromDir: string): string {
   let dir = fromDir;
@@ -87,6 +88,25 @@ program
     try {
       const cmd = new ListCommand();
       await cmd.execute(process.cwd());
+    } catch (error) {
+      failWithError(error);
+    }
+  });
+
+program
+  .command("remove <branch>")
+  .description("Remove a worktree (does not delete the branch)")
+  .option("--force", "Force removal even with uncommitted changes")
+  .action(async (branch: string, options: { force?: boolean }) => {
+    try {
+      const cmd = new RemoveCommand();
+      const path = await cmd.execute(process.cwd(), {
+        branch,
+        ...(options.force ? { force: true as const } : {}),
+      });
+      process.stdout.write(
+        `Removed worktree at ${relative(process.cwd(), path)}\n`,
+      );
     } catch (error) {
       failWithError(error);
     }
