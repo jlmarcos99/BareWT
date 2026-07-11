@@ -2,4 +2,10 @@ node_modules/
 dist/
 coverage/
 *.tgz
+# clone test artifacts (when run without chdir)
 docs/
+repo/
+proj/
+my-repo/
+jmarcos/
+dot/

@@ -13,39 +13,40 @@ npm install -g barewt
 El patrón es:
 
 ```
-mi-proyecto.git/        ← bare clone (solo .git, sin archivos)
+mi-proyecto/
+├── .git/               ← bare clone (solo el repo, sin working directory)
 ├── main/               ← worktree de la rama main
 ├── feature/login/      ← worktree de feature/login
 └── fix/crash/          ← worktree de fix/crash
 ```
 
-Cada rama vive en su propia carpeta. No hay `git stash`, no hay cambio de rama, cada worktree es independiente.
+Cada rama vive en su propia carpeta, dentro de la misma carpeta padre que `.git`. No hay `git stash`, no hay cambio de rama, cada worktree es independiente.
 
 ## Comandos
 
 ### `bwt clone <repo> [nombre]`
 
-Hace un bare clone del repositorio.
+Hace un bare clone del repositorio dentro de una carpeta `.git`.
 
 ```bash
 bwt clone git@github.com:usuario/mi-proyecto.git
-# crea: mi-proyecto.git/
+# crea: mi-proyecto/.git/ (bare clone listo para trabajar)
 
 bwt clone git@github.com:usuario/mi-proyecto.git trabajo
-# crea: trabajo.git/
+# crea: trabajo/.git/
 ```
 
 ### `bwt add <rama>`
 
-Crea un worktree para la rama especificada. Se ejecuta dentro de la carpeta del bare clone.
+Crea un worktree para la rama especificada. Se ejecuta dentro de la carpeta `.git`.
 
 ```bash
-cd mi-proyecto.git
+cd mi-proyecto/.git
 bwt add main
-# crea: ../mi-proyecto/main/
+# crea: ../main/
 
 bwt add feature/login
-# crea: ../mi-proyecto/feature/login/
+# crea: ../feature/login/
 
 bwt add fix/crash --new
 # crea la rama nueva y su worktree
@@ -56,13 +57,13 @@ bwt add fix/crash --new
 Lista todos los worktrees activos del repositorio.
 
 ```bash
-cd mi-proyecto.git
+cd mi-proyecto/.git
 bwt list
 ```
 
 ```
-  main          abc1234  ../mi-proyecto/main
-  feature/login def5678  ../mi-proyecto/feature/login
+  main          abc1234  ../main
+  feature/login def5678  ../feature/login
 ```
 
 ### `bwt remove <rama>`
@@ -70,7 +71,7 @@ bwt list
 Elimina el worktree de una rama (no elimina la rama en sí).
 
 ```bash
-cd mi-proyecto.git
+cd mi-proyecto/.git
 bwt remove feature/login
 ```
 
@@ -91,11 +92,11 @@ Wizard interactivo de arranque de un proyecto nuevo. Convive con `bwt clone` (el
 $ bwt init
 ? URL del repositorio › git@github.com:equipo/mi-proyecto.git
 ? Nombre de la carpeta › (mi-proyecto)
-✔ Bare clone creado, ramas remotas obtenidas
+✔ Bare clone creado en mi-proyecto/.git, ramas remotas obtenidas
 ? Rama principal detectada: main. ¿Crear su worktree? › (Y/n)
 ? ¿Worktrees de otras ramas? › (multiselect con las ramas remotas)
 ? ¿Rutas compartidas entre worktrees (no se suben al repo)? › openspec, .env, otra…
-✔ mi-proyecto.git/  +  mi-proyecto/main/  +  link openspec
+✔ mi-proyecto/.git/  +  mi-proyecto/main/  +  link openspec
 ```
 
 Comportamiento:
@@ -113,12 +114,12 @@ Comportamiento:
 Limpieza de worktrees huérfanos: aquellos cuya rama ya fue eliminada en origin (el `[gone]` de git), típicamente tras mergear un PR. Se ejecuta dentro del bare clone.
 
 ```
-$ cd mi-proyecto.git
+$ cd mi-proyecto/.git
 $ bwt prune
 ✔ fetch --prune ejecutado
 Worktrees candidatos:
-  feature/login   [rama eliminada en origin]   ../mi-proyecto/feature/login
-  fix/crash       [rama eliminada en origin]   ../mi-proyecto/fix/crash  ⚠ cambios sin commitear
+  feature/login   [rama eliminada en origin]   ../feature/login
+  fix/crash       [rama eliminada en origin]   ../fix/crash  ⚠ cambios sin commitear
 ? ¿Eliminar feature/login? (Y/n)
 ✘ fix/crash omitido (working tree sucio, usa --force)
 ✔ 1 worktree y su rama local eliminados
@@ -140,8 +141,8 @@ Comportamiento:
 Rutas compartidas entre worktrees: registra una carpeta o archivo que vive en la raíz del proyecto (fuera del repo) y que cada worktree ve mediante symlink. Pensado para artefactos personales que no deben subirse al repositorio: `openspec/`, `.env`, notas, caches.
 
 ```
-mi-proyecto.git/          ← bare clone
 mi-proyecto/
+├── .git/                 ← bare clone
 ├── openspec/             ← real, único, compartido
 ├── main/
 │   └── openspec → ../openspec
@@ -150,7 +151,7 @@ mi-proyecto/
 ```
 
 ```bash
-cd mi-proyecto.git
+cd mi-proyecto/.git
 bwt link openspec
 # registra la ruta en la config del bare clone
 # y crea el symlink en los worktrees existentes
@@ -175,8 +176,8 @@ Comportamiento:
 El bare clone equivale a:
 
 ```bash
-git clone --bare <repo> <nombre>.git
-cd <nombre>.git
+git clone --bare <repo> <proyecto>/.git
+cd <proyecto>/.git
 git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
 git fetch --all
 ```
@@ -184,5 +185,5 @@ git fetch --all
 Y `bwt add <rama>` equivale a:
 
 ```bash
-git worktree add ../<proyecto>/<rama> <rama>
+git worktree add ../<rama> <rama>
 ```
