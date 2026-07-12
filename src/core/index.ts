@@ -5,3 +5,4 @@ export { ListCommand } from "./list.js";
 export * from "./model.js";
 export { PruneCommand } from "./prune.js";
 export { RemoveCommand } from "./remove.js";
+export { WipeCommand } from "./wipe.js";

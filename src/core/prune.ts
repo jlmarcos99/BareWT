@@ -41,7 +41,7 @@ export class PruneCommand {
       const wt = worktrees.find((w) => w.branch === branch);
       if (!wt) {
         if (!options.keepBranches) {
-          await git(["branch", "-d", branch], cwd);
+          await git(["branch", "-D", branch], cwd);
         }
         continue;
       }
@@ -51,7 +51,7 @@ export class PruneCommand {
         const status = await git(["-C", wt.path, "status", "--porcelain"], cwd);
         if (status.trim() !== "") dirty = true;
       } catch {
-        // worktree might be missing
+        continue;
       }
 
       if (dirty && !options.force) {

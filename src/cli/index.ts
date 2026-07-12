@@ -8,6 +8,7 @@ import { CloneCommand } from "../core/clone.js";
 import { ListCommand } from "../core/list.js";
 import { PruneCommand } from "../core/prune.js";
 import { RemoveCommand } from "../core/remove.js";
+import { WipeCommand } from "../core/wipe.js";
 
 function resolvePackageRoot(fromDir: string): string {
   let dir = fromDir;
@@ -118,7 +119,21 @@ program
   });
 
 program
+  .command("wipe")
+  .alias("w")
+  .description("Interactively select and remove worktrees")
+  .action(async () => {
+    try {
+      const cmd = new WipeCommand();
+      await cmd.execute(process.cwd());
+    } catch (error) {
+      failWithError(error);
+    }
+  });
+
+program
   .command("prune")
+  .alias("p")
   .description("Remove orphan worktrees whose branches were deleted on origin")
   .option("--dry-run", "Show what would be removed without doing it")
   .option("--yes", "Skip confirmation prompts")
