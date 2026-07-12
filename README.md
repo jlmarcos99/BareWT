@@ -75,6 +75,24 @@ cd mi-proyecto/.git
 bwt remove feature/login
 ```
 
+## Atajos
+
+Cada comando tiene un alias corto de una letra:
+
+| Comando | Alias |
+|---------|-------|
+| `clone` | `c` |
+| `add`   | `a` |
+| `list`  | `l` |
+| `remove`| `r` |
+
+```bash
+bwt c git@github.com:usuario/repo.git   # mismo que bwt clone
+bwt a main                               # mismo que bwt add
+bwt l                                    # mismo que bwt list
+bwt r feature/login                      # mismo que bwt remove
+```
+
 ## Opciones globales
 
 | Flag | Descripción |
