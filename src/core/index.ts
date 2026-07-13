@@ -1,8 +1,11 @@
 export { AddCommand } from "./add.js";
 export { CloneCommand } from "./clone.js";
 export * from "./errors.js";
+export { InitCommand } from "./init.js";
 export { ListCommand } from "./list.js";
 export * from "./model.js";
+export { ProtectCommand } from "./protect.js";
 export { PruneCommand } from "./prune.js";
 export { RemoveCommand } from "./remove.js";
+export { UnprotectCommand } from "./unprotect.js";
 export { WipeCommand } from "./wipe.js";

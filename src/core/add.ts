@@ -1,20 +1,11 @@
 import { isAbsolute, join, resolve } from "node:path";
-import { ensureBareRepository, git } from "../utils/git.js";
+import { ensureBareRepository, git, refExists } from "../utils/git.js";
 import { CliError } from "./errors.js";
 import { parsePorcelain } from "./parsers.js";
 
 export interface AddOptions {
   branch: string;
   new?: boolean;
-}
-
-async function refExists(cwd: string, ref: string): Promise<boolean> {
-  try {
-    await git(["rev-parse", "--verify", ref], cwd);
-    return true;
-  } catch {
-    return false;
-  }
 }
 
 export class AddCommand {

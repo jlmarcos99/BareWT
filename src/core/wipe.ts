@@ -1,4 +1,5 @@
 import { checkbox, confirm } from "@inquirer/prompts";
+import { getProtectedBranches } from "../utils/branch.js";
 import { removeEmptyParents } from "../utils/file-system.js";
 import { ensureBareRepository, git } from "../utils/git.js";
 import { parsePorcelain } from "./parsers.js";
@@ -18,10 +19,10 @@ export class WipeCommand {
 
     const porcelain = await git(["worktree", "list", "--porcelain"], cwd);
     const worktrees = parsePorcelain(porcelain);
-    const mainBranches = new Set(["main", "master"]);
+    const protectedBranches = await getProtectedBranches(cwd);
 
     const candidates = worktrees.filter(
-      (wt) => wt.branch && !mainBranches.has(wt.branch),
+      (wt) => wt.branch && !protectedBranches.has(wt.branch),
     );
 
     if (candidates.length === 0) {

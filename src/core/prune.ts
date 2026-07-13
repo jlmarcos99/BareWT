@@ -1,3 +1,4 @@
+import { getProtectedBranches } from "../utils/branch.js";
 import { removeEmptyParents } from "../utils/file-system.js";
 import { ensureBareRepository, git } from "../utils/git.js";
 import { parsePorcelain } from "./parsers.js";
@@ -33,10 +34,10 @@ export class PruneCommand {
     const worktrees = parsePorcelain(porcelain);
 
     const results: string[] = [];
-    const mainBranches = new Set(["main", "master"]);
+    const protectedBranches = await getProtectedBranches(cwd);
 
     for (const branch of goneBranches) {
-      if (mainBranches.has(branch)) continue;
+      if (protectedBranches.has(branch)) continue;
 
       const wt = worktrees.find((w) => w.branch === branch);
       if (!wt) {

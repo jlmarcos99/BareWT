@@ -5,9 +5,12 @@ import { fileURLToPath } from "node:url";
 import { Command } from "commander";
 import { AddCommand } from "../core/add.js";
 import { CloneCommand } from "../core/clone.js";
+import { InitCommand } from "../core/init.js";
 import { ListCommand } from "../core/list.js";
+import { ProtectCommand } from "../core/protect.js";
 import { PruneCommand } from "../core/prune.js";
 import { RemoveCommand } from "../core/remove.js";
+import { UnprotectCommand } from "../core/unprotect.js";
 import { WipeCommand } from "../core/wipe.js";
 
 function resolvePackageRoot(fromDir: string): string {
@@ -45,6 +48,32 @@ function failWithError(error: unknown): never {
   }
   throw error;
 }
+
+program
+  .command("init [url]")
+  .description("Interactive wizard to set up a new project")
+  .option("--name <name>", "Project folder name")
+  .option("--yes", "Skip prompts and use defaults")
+  .action(
+    async (
+      url: string | undefined,
+      options: {
+        name?: string;
+        yes?: boolean;
+      },
+    ) => {
+      try {
+        const cmd = new InitCommand();
+        const opts: { url?: string; name?: string; yes?: boolean } = {};
+        if (url !== undefined) opts.url = url;
+        if (options.name !== undefined) opts.name = options.name;
+        if (options.yes !== undefined) opts.yes = options.yes;
+        await cmd.execute(opts);
+      } catch (error) {
+        failWithError(error);
+      }
+    },
+  );
 
 program
   .command("clone <repo> [name]")
@@ -89,10 +118,12 @@ program
   .command("list")
   .alias("l")
   .description("List all active worktrees")
-  .action(async () => {
+  .option("--protected", "Show only protected worktrees")
+  .option("--unprotected", "Show only unprotected worktrees")
+  .action(async (options: { protected?: boolean; unprotected?: boolean }) => {
     try {
       const cmd = new ListCommand();
-      await cmd.execute(process.cwd());
+      await cmd.execute(process.cwd(), options);
     } catch (error) {
       failWithError(error);
     }
@@ -160,6 +191,32 @@ program
       }
     },
   );
+
+program
+  .command("protect <branch>")
+  .description("Mark a branch as protected from prune/wipe")
+  .action(async (branch: string) => {
+    try {
+      const cmd = new ProtectCommand();
+      await cmd.execute(process.cwd(), branch);
+      process.stdout.write(`Protected ${branch}\n`);
+    } catch (error) {
+      failWithError(error);
+    }
+  });
+
+program
+  .command("unprotect <branch>")
+  .description("Remove protection from a branch")
+  .action(async (branch: string) => {
+    try {
+      const cmd = new UnprotectCommand();
+      await cmd.execute(process.cwd(), branch);
+      process.stdout.write(`Unprotected ${branch}\n`);
+    } catch (error) {
+      failWithError(error);
+    }
+  });
 
 export function run(argv = process.argv): void {
   program.parse(argv);

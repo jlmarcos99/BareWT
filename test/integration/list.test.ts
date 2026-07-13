@@ -17,23 +17,36 @@ describe("ListCommand", () => {
   it("lists all worktrees with branch, sha, and path", async () => {
     fixture = await createFixtureRepo();
 
-    const lines: string[] = [];
-    const origWrite = process.stdout.write.bind(process.stdout);
-    process.stdout.write = (chunk) => {
-      lines.push(typeof chunk === "string" ? chunk : chunk.toString());
-      return true;
-    };
-
     const cmd = new ListCommand();
-    await cmd.execute(fixture.bareDir);
-
-    process.stdout.write = origWrite;
+    const lines = await cmd.execute(fixture.bareDir);
 
     const output = lines.join("");
     expect(output).toContain("main");
     expect(output).toContain("feature/login");
     expect(output).toContain("work/main");
     expect(output).toContain("work/feature/login");
+  });
+
+  it("--protected shows only protected worktrees", async () => {
+    fixture = await createFixtureRepo();
+
+    const cmd = new ListCommand();
+    const lines = await cmd.execute(fixture.bareDir, { protected: true });
+
+    const output = lines.join("");
+    expect(output).toContain("main");
+    expect(output).not.toContain("feature/login");
+  });
+
+  it("--unprotected shows only unprotected worktrees", async () => {
+    fixture = await createFixtureRepo();
+
+    const cmd = new ListCommand();
+    const lines = await cmd.execute(fixture.bareDir, { unprotected: true });
+
+    const output = lines.join("");
+    expect(output).not.toContain("main");
+    expect(output).toContain("feature/login");
   });
 
   it("throws when not in a bare repository", async () => {

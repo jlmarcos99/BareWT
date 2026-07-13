@@ -122,4 +122,26 @@ describe("PruneCommand", () => {
       "not a bare repository",
     );
   });
+
+  it("skips branches protected via git config", async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
+    cleanupDir = base;
+
+    const { bareDir } = await setupGoneBare(base);
+
+    // Mark feat/done as protected
+    await execa("git", [
+      "-C",
+      bareDir,
+      "config",
+      "--add",
+      "bwt.protected",
+      "feat/done",
+    ]);
+
+    const cmd = new PruneCommand();
+    const results = await cmd.execute(bareDir, { dryRun: true });
+
+    expect(results).toEqual([]);
+  });
 });

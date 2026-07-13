@@ -6,6 +6,15 @@ export async function git(args: string[], cwd?: string): Promise<string> {
   return stdout;
 }
 
+export async function refExists(cwd: string, ref: string): Promise<boolean> {
+  try {
+    await git(["rev-parse", "--verify", ref], cwd);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function ensureBareRepository(cwd: string): Promise<void> {
   const result = await execa("git", ["rev-parse", "--is-bare-repository"], {
     cwd,
