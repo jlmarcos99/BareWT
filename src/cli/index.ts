@@ -51,6 +51,7 @@ function failWithError(error: unknown): never {
 
 program
   .command("init [url]")
+  .alias("i")
   .description("Interactive wizard to set up a new project")
   .option("--name <name>", "Project folder name")
   .option("--yes", "Skip prompts and use defaults")
@@ -99,7 +100,7 @@ program
   .command("add <branch>")
   .alias("a")
   .description("Add a worktree for a branch")
-  .option("--new", "Create a new branch before adding the worktree")
+  .option("-n, --new", "Create a new branch before adding the worktree")
   .action(async (branch: string, options: { new?: boolean }) => {
     try {
       const cmd = new AddCommand();
@@ -118,8 +119,8 @@ program
   .command("list")
   .alias("l")
   .description("List all active worktrees")
-  .option("--protected", "Show only protected worktrees")
-  .option("--unprotected", "Show only unprotected worktrees")
+  .option("-p, --protected", "Show only protected worktrees")
+  .option("-u, --unprotected", "Show only unprotected worktrees")
   .action(async (options: { protected?: boolean; unprotected?: boolean }) => {
     try {
       const cmd = new ListCommand();
@@ -133,7 +134,7 @@ program
   .command("remove <branch>")
   .alias("r")
   .description("Remove a worktree (does not delete the branch)")
-  .option("--force", "Force removal even with uncommitted changes")
+  .option("-f, --force", "Force removal even with uncommitted changes")
   .action(async (branch: string, options: { force?: boolean }) => {
     try {
       const cmd = new RemoveCommand();
@@ -166,10 +167,10 @@ program
   .command("prune")
   .alias("p")
   .description("Remove orphan worktrees whose branches were deleted on origin")
-  .option("--dry-run", "Show what would be removed without doing it")
-  .option("--yes", "Skip confirmation prompts")
-  .option("--keep-branches", "Keep local branches after removing worktrees")
-  .option("--force", "Force removal of dirty worktrees")
+  .option("-d, --dry-run", "Show what would be removed without doing it")
+  .option("-y, --yes", "Skip confirmation prompts")
+  .option("-k, --keep-branches", "Keep local branches after removing worktrees")
+  .option("-f, --force", "Force removal of dirty worktrees")
   .action(
     async (options: {
       dryRun?: boolean;
@@ -194,6 +195,7 @@ program
 
 program
   .command("protect <branch>")
+  .alias("pt")
   .description("Mark a branch as protected from prune/wipe")
   .action(async (branch: string) => {
     try {
@@ -207,6 +209,7 @@ program
 
 program
   .command("unprotect <branch>")
+  .alias("up")
   .description("Remove protection from a branch")
   .action(async (branch: string) => {
     try {
