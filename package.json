@@ -35,7 +35,7 @@
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "verify": "npm run typecheck && npm run lint && npm run build && npm run test",
     "changeset": "changeset",
     "release": "npm run build && changeset publish"
   },
