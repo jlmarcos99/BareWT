@@ -35,9 +35,10 @@ bwt
 ├── clone <repo> [name]    c
 │     Create a bare clone inside <name>/.git
 │
-├── add <branch>           a    -n, --new
-│     Create a worktree for a branch. --new creates the branch first.
-│
+├── add <branch> [origin]  a    -n, --new
+│     Create a worktree for a branch. With [origin], creates a new
+│     branch from the given ref (branch, tag, or commit) and adds its worktree.
+│     --new creates the branch from HEAD.
 ├── list                   l    -p, --protected   -u, --unprotected
 │     List worktrees. --protected / --unprotected filter by status.
 │
@@ -113,7 +114,8 @@ Creates a worktree for a given branch. Run from inside `.git/`.
 cd repo/.git
 bwt add main                    # → ../main/
 bwt add feature/login           # → ../feature/login/
-bwt add fix/crash -n --new      # creates the branch first
+bwt add fix/crash -n --new      # creates the branch from HEAD
+bwt add feat/api develop         # creates feat/api from develop
 ```
 
 ### `bwt list` (alias `l`)

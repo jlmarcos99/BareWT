@@ -99,23 +99,34 @@ program
   });
 
 program
-  .command("add <branch>")
+  .command("add <branch> [origin]")
   .alias("a")
-  .description("Add a worktree for a branch")
+  .description(
+    "Add a worktree for a branch, or create a new branch from an origin",
+  )
   .option("-n, --new", "Create a new branch before adding the worktree")
-  .action(async (branch: string, options: { new?: boolean }) => {
-    try {
-      const cmd = new AddCommand();
-      const opts: { branch: string; new?: boolean } = { branch };
-      if (options.new) opts.new = true;
-      const path = await cmd.execute(process.cwd(), opts);
-      const relPath = relative(process.cwd(), path);
-      process.stdout.write(`Added worktree at ${relPath}\n`);
-      process.stdout.write(`To start working: cd ${relPath}\n`);
-    } catch (error) {
-      failWithError(error);
-    }
-  });
+  .action(
+    async (
+      branch: string,
+      origin: string | undefined,
+      options: { new?: boolean },
+    ) => {
+      try {
+        const cmd = new AddCommand();
+        const opts: { branch: string; new?: boolean; origin?: string } = {
+          branch,
+        };
+        if (options.new) opts.new = true;
+        if (origin !== undefined) opts.origin = origin;
+        const path = await cmd.execute(process.cwd(), opts);
+        const relPath = relative(process.cwd(), path);
+        process.stdout.write(`Added worktree at ${relPath}\n`);
+        process.stdout.write(`To start working: cd ${relPath}\n`);
+      } catch (error) {
+        failWithError(error);
+      }
+    },
+  );
 
 program
   .command("link [path]")

@@ -35,9 +35,10 @@ bwt
 ├── clone <repo> [name]    c
 │     Crea un bare clone dentro de <name>/.git
 │
-├── add <branch>           a    -n, --new
-│     Crea un worktree para una rama. --new crea la rama primero.
-│
+├── add <branch> [origin]  a    -n, --new
+│     Crea un worktree para una rama. Con [origen], crea una nueva rama
+│     desde la ref indicada (rama, tag o commit) y añade su worktree.
+│     --new crea la rama desde HEAD.
 ├── list                   l    -p, --protected   -u, --unprotected
 │     Lista worktrees. --protected / --unprotected filtran por estado.
 │
@@ -113,7 +114,8 @@ Crea un worktree para una rama. Se ejecuta dentro de `.git/`.
 cd repo/.git
 bwt add main                    # → ../main/
 bwt add feature/login           # → ../feature/login/
-bwt add fix/crash -n --new      # crea la rama antes del worktree
+bwt add fix/crash -n --new      # crea la rama desde HEAD
+bwt add feat/api develop         # crea feat/api desde develop
 ```
 
 ### `bwt list` (alias `l`)

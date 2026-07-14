@@ -117,6 +117,30 @@ describe("AddCommand", () => {
     expect(stdout.trim()).toBeTruthy();
   });
 
+  it("creates a new branch from an origin and adds its worktree", async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
+    tmpDir = base;
+    prevCwd = cwd();
+    chdir(base);
+
+    const { bareDir } = await initBareWithRemotes(base);
+
+    const cmd = new AddCommand();
+    await cmd.execute(bareDir, {
+      branch: "feat/from-main",
+      origin: "main",
+    });
+
+    const { stdout } = await execa("git", [
+      "-C",
+      bareDir,
+      "rev-parse",
+      "--verify",
+      "refs/heads/feat/from-main",
+    ]);
+    expect(stdout.trim()).toBeTruthy();
+  });
+
   it("throws if the worktree already exists", async () => {
     const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
     tmpDir = base;

@@ -7,6 +7,7 @@ import { parsePorcelain } from "./parsers.js";
 export interface AddOptions {
   branch: string;
   new?: boolean;
+  origin?: string;
 }
 
 export class AddCommand {
@@ -28,7 +29,7 @@ export class AddCommand {
       );
     }
 
-    if (!options.new) {
+    if (!options.new && !options.origin) {
       const existsLocally = await refExists(
         cwd,
         `refs/heads/${options.branch}`,
@@ -52,7 +53,12 @@ export class AddCommand {
       }
     }
 
-    if (options.new) {
+    if (options.origin) {
+      await git(
+        ["worktree", "add", "-b", options.branch, worktreePath, options.origin],
+        cwd,
+      );
+    } else if (options.new) {
       await git(["worktree", "add", "-b", options.branch, worktreePath], cwd);
     } else {
       await git(["worktree", "add", worktreePath, options.branch], cwd);
