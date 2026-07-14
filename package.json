@@ -12,7 +12,7 @@
   "author": "jmarcos <joseluespp@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CAMBIAME/barewt.git"
+    "url": "git+https://github.com/jlmarcos99/BareWT.git"
   },
   "type": "module",
   "bin": {
