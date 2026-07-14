@@ -1,6 +1,7 @@
 import { isAbsolute, join, resolve } from "node:path";
 import { ensureBareRepository, git, refExists } from "../utils/git.js";
 import { CliError } from "./errors.js";
+import { createLinkedSymlinks, getLinkedPaths } from "./link-helpers.js";
 import { parsePorcelain } from "./parsers.js";
 
 export interface AddOptions {
@@ -55,6 +56,11 @@ export class AddCommand {
       await git(["worktree", "add", "-b", options.branch, worktreePath], cwd);
     } else {
       await git(["worktree", "add", worktreePath, options.branch], cwd);
+    }
+
+    const linked = await getLinkedPaths(cwd);
+    for (const linkedPath of linked) {
+      await createLinkedSymlinks(projectRoot, [worktreePath], linkedPath);
     }
 
     return worktreePath;

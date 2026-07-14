@@ -1,4 +1,5 @@
 import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import { lstat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { chdir, cwd } from "node:process";
@@ -156,5 +157,32 @@ describe("AddCommand", () => {
     await expect(cmd.execute(base, { branch: "main" })).rejects.toThrow(
       "not a bare repository",
     );
+  });
+
+  it("creates symlinks for linked paths in new worktrees", async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
+    tmpDir = base;
+    prevCwd = cwd();
+    chdir(base);
+
+    const { bareDir } = await initBareWithRemotes(base);
+
+    const projectRoot = join(base, "proj");
+    mkdirSync(join(projectRoot, "shared"), { recursive: true });
+    await execa("git", [
+      "-C",
+      bareDir,
+      "config",
+      "--add",
+      "bwt.linked",
+      "shared",
+    ]);
+
+    const cmd = new AddCommand();
+    await cmd.execute(bareDir, { branch: "main" });
+
+    const linkPath = join(projectRoot, "main", "shared");
+    const stat = await lstat(linkPath);
+    expect(stat.isSymbolicLink()).toBe(true);
   });
 });

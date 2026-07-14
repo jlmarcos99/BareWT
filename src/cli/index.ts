@@ -6,10 +6,12 @@ import { Command } from "commander";
 import { AddCommand } from "../core/add.js";
 import { CloneCommand } from "../core/clone.js";
 import { InitCommand } from "../core/init.js";
+import { LinkCommand } from "../core/link.js";
 import { ListCommand } from "../core/list.js";
 import { ProtectCommand } from "../core/protect.js";
 import { PruneCommand } from "../core/prune.js";
 import { RemoveCommand } from "../core/remove.js";
+import { UnlinkCommand } from "../core/unlink.js";
 import { UnprotectCommand } from "../core/unprotect.js";
 import { WipeCommand } from "../core/wipe.js";
 
@@ -53,22 +55,22 @@ program
   .command("init [url]")
   .alias("i")
   .description("Interactive wizard to set up a new project")
-  .option("--name <name>", "Project folder name")
-  .option("--yes", "Skip prompts and use defaults")
+  .option("-n, --name <name>", "Project folder name")
+  .option("-a, --auto", "Fully automated — no prompts, uses defaults")
   .action(
     async (
       url: string | undefined,
       options: {
         name?: string;
-        yes?: boolean;
+        auto?: boolean;
       },
     ) => {
       try {
         const cmd = new InitCommand();
-        const opts: { url?: string; name?: string; yes?: boolean } = {};
+        const opts: { url?: string; name?: string; auto?: boolean } = {};
         if (url !== undefined) opts.url = url;
         if (options.name !== undefined) opts.name = options.name;
-        if (options.yes !== undefined) opts.yes = options.yes;
+        if (options.auto !== undefined) opts.auto = options.auto;
         await cmd.execute(opts);
       } catch (error) {
         failWithError(error);
@@ -110,6 +112,40 @@ program
       const relPath = relative(process.cwd(), path);
       process.stdout.write(`Added worktree at ${relPath}\n`);
       process.stdout.write(`To start working: cd ${relPath}\n`);
+    } catch (error) {
+      failWithError(error);
+    }
+  });
+
+program
+  .command("link [path]")
+  .alias("lk")
+  .description("Link a shared path, or list linked paths if no argument given")
+  .option("-s, --sync", "Recreate symlinks for all registered paths")
+  .action(async (path: string | undefined, options: { sync?: boolean }) => {
+    try {
+      const cmd = new LinkCommand();
+      await cmd.execute(process.cwd(), path, options.sync);
+      if (path && !options.sync) {
+        process.stdout.write(`Linked ${path}\n`);
+      }
+      if (options.sync) {
+        process.stdout.write("Synced linked paths\n");
+      }
+    } catch (error) {
+      failWithError(error);
+    }
+  });
+
+program
+  .command("unlink <path>")
+  .alias("ul")
+  .description("Remove a shared path symlink from all worktrees")
+  .action(async (path: string) => {
+    try {
+      const cmd = new UnlinkCommand();
+      await cmd.execute(process.cwd(), path);
+      process.stdout.write(`Unlinked ${path}\n`);
     } catch (error) {
       failWithError(error);
     }

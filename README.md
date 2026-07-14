@@ -1,167 +1,187 @@
 # barewt (`bwt`)
 
-CLI para trabajar con git worktrees usando el patrón de bare clone. Clona solo el repositorio (sin working directory) y permite crear worktrees por rama de forma simple.
+[Español](README.es.md)
 
-## Instalación
+CLI for git worktrees using the bare clone pattern. Clone once, work on multiple branches simultaneously — each in its own folder. No switching, no stashing.
+
+**Designed for AI agents.** barewt gives each AI coding session its own clean worktree with independent context, shared through linked paths like `openspec/`. Your AI agent provisions worktrees, you switch between them, and `bwt prune` cleans up after merged PRs.
+
+## Installation
 
 ```bash
 npm install -g barewt
 ```
 
-## Flujo de trabajo
-
-El patrón es:
+## Workflow
 
 ```
-mi-proyecto/
-├── .git/               ← bare clone (solo el repo, sin working directory)
-├── main/               ← worktree de la rama main
-├── feature/login/      ← worktree de feature/login
-└── fix/crash/          ← worktree de fix/crash
+project/
+├── .git/               ← bare clone (repo only, no working tree)
+├── main/               ← worktree for main
+├── feature/login/      ← worktree for feature/login
+└── fix/crash/          ← worktree for fix/crash
 ```
 
-Cada rama vive en su propia carpeta, dentro de la misma carpeta padre que `.git`. No hay `git stash`, no hay cambio de rama, cada worktree es independiente.
+Each branch lives in its own folder alongside `.git/`. Every worktree is independent.
 
-## Comandos
-
-### `bwt clone <repo> [nombre]`
-
-Hace un bare clone del repositorio dentro de una carpeta `.git`.
-
-```bash
-bwt clone git@github.com:usuario/mi-proyecto.git
-# crea: mi-proyecto/.git/ (bare clone listo para trabajar)
-
-bwt clone git@github.com:usuario/mi-proyecto.git trabajo
-# crea: trabajo/.git/
-```
-
-### `bwt add <rama>`
-
-Crea un worktree para la rama especificada. Se ejecuta dentro de la carpeta `.git`.
-
-```bash
-cd mi-proyecto/.git
-bwt add main
-# crea: ../main/
-
-bwt add feature/login
-# crea: ../feature/login/
-
-bwt add fix/crash --new
-# crea la rama nueva y su worktree
-```
-
-### `bwt list`
-
-Lista todos los worktrees activos del repositorio.
-
-```bash
-cd mi-proyecto/.git
-bwt list
-```
+## Command tree
 
 ```
-  main          abc1234  ../main
-  feature/login def5678  ../feature/login
+bwt
+├── init [url]             i    -n, --name <dir>   -a, --auto
+│     -a, --auto: fully automated. Clones the repo, creates a worktree
+│     for the default branch, and protects it — no questions asked.
+│
+├── clone <repo> [name]    c
+│     Create a bare clone inside <name>/.git
+│
+├── add <branch>           a    -n, --new
+│     Create a worktree for a branch. --new creates the branch first.
+│
+├── list                   l    -p, --protected   -u, --unprotected
+│     List worktrees. --protected / --unprotected filter by status.
+│
+├── remove <branch>        r    -f, --force
+│     Remove a worktree (keeps the branch). --force overrides dirty check.
+│
+├── prune                  p    -d, --dry-run   -y, --yes   -k, --keep-branches   -f, --force
+│     Remove worktrees whose upstream branch was deleted on origin.
+│     --dry-run shows what would happen. --keep-branches keeps local branches.
+│     --force removes even dirty worktrees.
+│
+├── wipe                   w
+│     Interactive checkbox selector to remove worktrees.
+│     Protected branches are excluded.
+│
+├── protect <branch>       pt
+│     Mark a branch as protected (survives prune and wipe).
+│
+├── unprotect <branch>     up
+│     Remove protection from a branch.
+│
+├── link [path]            lk   -s, --sync
+│     Share a folder/file from project root into all worktrees via symlinks.
+│     Without arguments, lists registered paths. -s, --sync recreates missing symlinks.
+│
+└── unlink <path>          ul
+      Remove a shared symlink from all worktrees and unregister it.
 ```
 
-### `bwt remove <rama>`
+## Commands
 
-Elimina el worktree de una rama (no elimina la rama en sí).
+### `bwt init [url]` (alias `i`)
 
-```bash
-cd mi-proyecto/.git
-bwt remove feature/login
-```
-
-## Atajos
-
-Cada comando tiene un alias corto de una letra:
-
-| Comando | Alias |
-|---------|-------|
-| `clone` | `c` |
-| `add`   | `a` |
-| `list`  | `l` |
-| `remove`| `r` |
-
-```bash
-bwt c git@github.com:usuario/repo.git   # mismo que bwt clone
-bwt a main                               # mismo que bwt add
-bwt l                                    # mismo que bwt list
-bwt r feature/login                      # mismo que bwt remove
-```
-
-## Opciones globales
-
-| Flag | Descripción |
-|------|-------------|
-| `--version` | Muestra la versión |
-| `--help` | Muestra ayuda |
-
-## Posibles evolutivos (v2)
-
-### `bwt init [url]`
-
-Wizard interactivo de arranque de un proyecto nuevo. Convive con `bwt clone` (el camino rápido de un solo paso); `init` es el camino guiado que orquesta `clone`, `add` y `link`.
+Interactive wizard to set up a new project from scratch.
 
 ```
 $ bwt init
-? URL del repositorio › git@github.com:equipo/mi-proyecto.git
-? Nombre de la carpeta › (mi-proyecto)
-✔ Bare clone creado en mi-proyecto/.git, ramas remotas obtenidas
-? Rama principal detectada: main. ¿Crear su worktree? › (Y/n)
-? ¿Worktrees de otras ramas? › (multiselect con las ramas remotas)
-? ¿Rutas compartidas entre worktrees (no se suben al repo)? › openspec, .env, otra…
-✔ mi-proyecto/.git/  +  mi-proyecto/main/  +  link openspec
+? Repository URL › git@github.com:user/repo.git
+? Project folder name › (repo)
+Cloned into repo/.git
+
+Protected branches are never deleted by prune or wipe.
+? Protect a branch (name, or Enter to finish) › develop
+
+Created worktree for develop
+Created worktree for main
+? Add another worktree (name, or Enter to finish) › (Enter)
+
+Summary:
+  Worktrees: develop, main
+  Protected: develop, main
+
+Ready! cd repo/.git to get started
 ```
 
-Comportamiento:
+### `bwt clone <repo> [name]` (alias `c`)
 
-- El clone ocurre a mitad del wizard: el fetch permite ofrecer un multiselect de ramas reales en vez de un campo de texto a ciegas.
-- La rama principal se detecta vía `HEAD` remoto (`main`/`master`).
-- El paso de rutas compartidas delega en `bwt link` (symlinks + `info/exclude` + config local). No ejecuta herramientas de terceros (no lanza `openspec init` ni similares).
-- Si la carpeta destino ya existe, aborta con error claro antes de clonar.
-- Flags espejo para modo no interactivo: `bwt init <url> --name trabajo --branch main --link openspec --yes`. Con `--yes`, las preguntas sin flag toman su default; sin TTY y sin `--yes`, falla explicando qué falta.
-- Cancelación a mitad (Ctrl+C tras el clone): el bare clone se conserva y se indica cómo continuar con los comandos atómicos. Un init interrumpido nunca deja un estado que `clone`/`add`/`link` no puedan completar.
-- Prompts con `@inquirer/prompts`.
+Creates a bare clone inside a `.git` folder.
 
-### `bwt prune`
+```bash
+bwt clone git@github.com:user/repo.git
+# creates: repo/.git/
 
-Limpieza de worktrees huérfanos: aquellos cuya rama ya fue eliminada en origin (el `[gone]` de git), típicamente tras mergear un PR. Se ejecuta dentro del bare clone.
-
-```
-$ cd mi-proyecto/.git
-$ bwt prune
-✔ fetch --prune ejecutado
-Worktrees candidatos:
-  feature/login   [rama eliminada en origin]   ../feature/login
-  fix/crash       [rama eliminada en origin]   ../fix/crash  ⚠ cambios sin commitear
-? ¿Eliminar feature/login? (Y/n)
-✘ fix/crash omitido (working tree sucio, usa --force)
-✔ 1 worktree y su rama local eliminados
+bwt clone git@github.com:user/repo.git my-project
+# creates: my-project/.git/
 ```
 
-Comportamiento:
+### `bwt add <branch>` (alias `a`)
 
-- Empieza con `git fetch --prune` para detectar contra el estado real del remoto.
-- Criterio de candidato: **upstream desaparecido**, no "rama mergeada" (la detección de merges falla con squash-merge; la desaparición del upstream es inequívoca y cubre también ese caso).
-- Elimina el worktree **y la rama local** (las dos mitades del huérfano). `--keep-branches` para conservar las ramas.
-- Nunca toca worktrees sucios (cambios sin commitear o commits sin respaldo remoto): los lista como omitidos y exige `--force`.
-- Ignora por completo los worktrees de ramas nunca pusheadas: son trabajo en curso, para eso existe `bwt remove`.
-- El worktree de la rama principal es intocable.
-- Recoge también basura administrativa: `git worktree prune` para metadata de worktrees borrados a mano, y carpetas intermedias vacías (`feature/` tras eliminar `feature/login`).
-- `--dry-run` muestra la lista sin tocar nada; `--yes` elimina sin confirmar uno a uno.
+Creates a worktree for a given branch. Run from inside `.git/`.
 
-### `bwt link <ruta>`
+```bash
+cd repo/.git
+bwt add main                    # → ../main/
+bwt add feature/login           # → ../feature/login/
+bwt add fix/crash -n --new      # creates the branch first
+```
 
-Rutas compartidas entre worktrees: registra una carpeta o archivo que vive en la raíz del proyecto (fuera del repo) y que cada worktree ve mediante symlink. Pensado para artefactos personales que no deben subirse al repositorio: `openspec/`, `.env`, notas, caches.
+### `bwt list` (alias `l`)
+
+Lists all active worktrees.
+
+```bash
+cd repo/.git
+bwt list
+#   main          abc1234  ../main
+#   feature/login def5678  ../feature/login
+
+bwt list -p --protected     # only protected worktrees
+bwt list -u --unprotected   # only unprotected worktrees
+```
+
+### `bwt remove <branch>` (alias `r`)
+
+Removes a worktree (does not delete the branch).
+
+```bash
+bwt remove feature/login
+bwt remove fix/crash -f --force   # even with uncommitted changes
+```
+
+### `bwt prune` (alias `p`)
+
+Removes orphan worktrees whose branches were deleted on origin (after merging a PR).
+
+```bash
+bwt prune                         # removes [gone] worktrees + local branches
+bwt prune -d --dry-run            # shows what would happen
+bwt prune -k --keep-branches      # removes worktrees only
+bwt prune -f --force              # even dirty worktrees
+```
+
+Protected branches (see `bwt protect`) are never removed.
+
+### `bwt wipe` (alias `w`)
+
+Interactive selector to remove worktrees manually.
 
 ```
-mi-proyecto/
-├── .git/                 ← bare clone
-├── openspec/             ← real, único, compartido
+$ bwt wipe
+Select worktrees to remove ›
+  ◯ feature/login
+  ◯ develop
+```
+
+Protected branches are excluded from the list.
+
+### `bwt protect <branch>` / `bwt unprotect <branch>` (aliases `pt` / `up`)
+
+Mark or unmark a branch as protected. Protected branches survive `prune` and `wipe`.
+
+```bash
+bwt protect develop
+bwt unprotect develop
+```
+
+### `bwt link [path]` (alias `lk`)
+
+Shares a folder or file across all worktrees via symlinks. Without arguments, lists registered paths.
+
+```
+project/
+├── .git/
+├── openspec/             ← real, shared across all worktrees
 ├── main/
 │   └── openspec → ../openspec
 └── feature/login/
@@ -169,39 +189,98 @@ mi-proyecto/
 ```
 
 ```bash
-cd mi-proyecto/.git
-bwt link openspec
-# registra la ruta en la config del bare clone
-# y crea el symlink en los worktrees existentes
-
-bwt link --sync
-# recrea symlinks que falten (p. ej. tras un git clean)
+bwt link                      # list linked paths
+bwt link openspec             # creates symlinks in all worktrees
+bwt link --sync               # recreates missing symlinks
 ```
 
-Comportamiento:
+Each `bwt add` automatically creates symlinks for all linked paths in new worktrees.
 
-- `bwt add` crea automáticamente los symlinks de todas las rutas registradas en cada worktree nuevo.
-- La ruta se añade a `<bare>.git/info/exclude`, que aplica a todos los worktrees y **nunca se commitea**: no hay rastro ni en `.gitignore` ni en `git status`.
-- La config se guarda en el bare clone (`git config --local`), por lo que es por proyecto y no viaja con el repositorio.
+### `bwt unlink <path>` (alias `ul`)
 
-## Implementación técnica
+Removes the symlink from all worktrees and unregisters the path.
+
+```bash
+bwt unlink openspec          # removes symlinks and config entry
+```
+
+## Multi-agent orchestration
+
+barewt is purpose-built for parallel AI agent workflows using
+Spec-Driven Development (SDD). Each agent gets its own worktree
+with an isolated branch, but all share a global context through
+linked paths.
+
+```
+                   ┌──────────────────────┐
+                   │   project/.opencode/  │  ← global state, tasks, SDD specs
+                   │   project/openspec/   │  ← shared specs (linked path)
+                   └──────┬───────────────┘
+                          │ shared symlink
+          ┌───────────────┼───────────────┐
+          │               │               │
+     ┌────▼────┐    ┌────▼────┐    ┌────▼────┐
+     │  main/  │    │ feat/A/ │    │ feat/B/ │
+     │ agent 0 │    │ agent 1 │    │ agent 2 │
+     └─────────┘    └─────────┘    └─────────┘
+```
+
+### Why it works
+
+- **Global context.** Linked paths (`.opencode/`, `openspec/`,
+  `.cursor/rules`) give every agent the same view of tasks, specs,
+  and project rules — no matter which branch they're on.
+- **Isolated work.** Each agent works in its own worktree with
+  its own branch. They never conflict or overwrite each other.
+- **SDD-ready.** `bwt link openspec` shares specs across the whole
+  team. Propose in one worktree, review in another, apply in parallel.
+- **Clean lifecycle.** Merge the PR → `bwt prune` removes the
+  worktree and branch. Start the next iteration from a clean state.
+
+### Usage
+
+```bash
+# 1. Set up the project with shared context
+bwt init git@github.com:team/project.git
+cd project/.git
+bwt link openspec           # SDD specs visible to all agents
+bwt link .opencode          # opencode tasks & state
+bwt link .cursor/rules      # AI coding rules for all agents
+
+# 2. Launch parallel agents
+bwt add feat/payment-api    # agent 1
+bwt add feat/auth-refactor  # agent 2
+bwt add fix/login-bug       # agent 3
+
+# 3. After merging, clean up
+bwt prune
+
+# 4. Start the next iteration
+bwt add feat/next-feature
+```
+
+Each worktree is a complete, independent checkout. Agents run
+in parallel with zero interference.
+
+## Shortcuts
+
+| Command | Alias | Short flags |
+|---------|-------|-------------|
+| `clone` | `c` | — |
+| `add` | `a` | `-n --new` |
+| `list` | `l` | `-p --protected`, `-u --unprotected` |
+| `remove` | `r` | `-f --force` |
+| `prune` | `p` | `-d --dry-run`, `-y --yes`, `-k --keep-branches`, `-f --force` |
+| `wipe` | `w` | — |
+| `init` | `i` | `-n, --name`, `-a --auto` |
+| `protect` | `pt` | — |
+| `unprotect` | `up` | — |
+| `link` | `lk` | `-s --sync` |
+| `unlink` | `ul` | — |
+
+## Technical details
 
 - **Runtime**: Node.js 22.12+
-- **CLI**: `commander`
-- **Git**: `execa` llamando a git directamente
-- **Distribución**: npm con campo `bin` en `package.json`
-
-El bare clone equivale a:
-
-```bash
-git clone --bare <repo> <proyecto>/.git
-cd <proyecto>/.git
-git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
-git fetch --all
-```
-
-Y `bwt add <rama>` equivale a:
-
-```bash
-git worktree add ../<rama> <rama>
-```
+- **Dependencies**: `commander`, `execa`, `@inquirer/prompts`
+- **Distribution**: npm binary (`bwt`)
+- **License**: MIT

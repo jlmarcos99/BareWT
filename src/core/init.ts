@@ -8,7 +8,7 @@ import { CloneCommand } from "./clone.js";
 export interface InitOptions {
   url?: string;
   name?: string;
-  yes?: boolean;
+  auto?: boolean;
 }
 
 export class InitCommand {
@@ -44,7 +44,7 @@ export class InitCommand {
     );
 
     while (true) {
-      if (options.yes) break;
+      if (options.auto) break;
       const branch = await input({
         message: "Protect a branch (name, or Enter to finish)",
       });
@@ -85,7 +85,7 @@ export class InitCommand {
     const remaining = localBranches.filter((b) => !protected_.has(b));
     if (remaining.length > 0) {
       while (true) {
-        if (options.yes) break;
+        if (options.auto) break;
         const branch = await input({
           message: "Add another worktree (name, or Enter to finish)",
         });

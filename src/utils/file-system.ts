@@ -1,5 +1,5 @@
-import { mkdir, readdir, rmdir, stat } from "node:fs/promises";
-import { dirname } from "node:path";
+import { appendFile, mkdir, readdir, rmdir, stat } from "node:fs/promises";
+import { dirname, resolve } from "node:path";
 
 export async function directoryExists(path: string): Promise<boolean> {
   try {
@@ -28,4 +28,13 @@ export async function removeEmptyParents(
       break;
     }
   }
+}
+
+export async function appendToInfoExclude(
+  gitDir: string,
+  pattern: string,
+): Promise<void> {
+  const excludePath = resolve(gitDir, "info", "exclude");
+  const content = `\n${pattern}\n`;
+  await appendFile(excludePath, content, "utf-8");
 }
