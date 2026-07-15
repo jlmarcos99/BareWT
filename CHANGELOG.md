@@ -1,5 +1,11 @@
 # barewt
 
+## 0.1.1
+
+### Patch Changes
+
+- f522ee4: Fix `EPERM` errors from `bwt link` on Windows: directories are now linked as junctions (no privileges required), and file symlinks fall back to hard links when symlink creation is not permitted.
+
 ## 0.1.0
 
 ### Minor Changes
