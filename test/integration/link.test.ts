@@ -32,6 +32,21 @@ describe("LinkCommand", () => {
     expect(content).toBe("hello");
   });
 
+  it("creates a symlink for a single file", async () => {
+    fixture = await createFixtureRepo();
+
+    const projectRoot = dirname(fixture.bareDir);
+    writeFileSync(join(projectRoot, "AGENTS.md"), "# agents");
+
+    const cmd = new LinkCommand();
+    await cmd.execute(fixture.bareDir, "AGENTS.md");
+
+    const linkPath = join(fixture.workDir, "main", "AGENTS.md");
+    const stat = await lstat(linkPath);
+    expect(stat.isSymbolicLink()).toBe(true);
+    expect(readFileSync(linkPath, "utf-8")).toBe("# agents");
+  });
+
   it("adds the path to info/exclude", async () => {
     fixture = await createFixtureRepo();
 
