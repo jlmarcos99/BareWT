@@ -1,3 +1,4 @@
+import { rm } from "node:fs/promises";
 import { checkbox, confirm } from "@inquirer/prompts";
 import { getProtectedBranches } from "../utils/branch.js";
 import { removeEmptyParents } from "../utils/file-system.js";
@@ -64,8 +65,25 @@ export class WipeCommand {
     }
 
     for (const wt of selected) {
-      await git(["worktree", "remove", "--force", wt.path], cwd);
-      process.stdout.write(`Removed ${wt.branch} worktree\n`);
+      try {
+        // Two --force flags: needed when the worktree is dirty AND has
+        // untracked files; a single one leaves the folder behind.
+        await git(["worktree", "remove", "--force", "--force", wt.path], cwd);
+        await rm(wt.path, { recursive: true, force: true });
+        process.stdout.write(`Removed ${wt.branch} worktree\n`);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        process.stderr.write(`Failed to remove ${wt.branch}: ${message}\n`);
+        const skip = await confirm({
+          message: "Skip this worktree and continue with the rest?",
+          default: true,
+        });
+        if (!skip) {
+          process.stdout.write("Cancelled.\n");
+          return;
+        }
+        continue;
+      }
       await removeEmptyParents(wt.path, cwd);
     }
   }

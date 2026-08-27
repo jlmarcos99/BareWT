@@ -3,7 +3,11 @@ import { isAbsolute, join, resolve } from "node:path";
 import { appendToInfoExclude } from "../utils/file-system.js";
 import { ensureBareRepository, git } from "../utils/git.js";
 import { CliError } from "./errors.js";
-import { createLinkedSymlinks, getLinkedPaths } from "./link-helpers.js";
+import {
+  allowLinkedPathsInOpencode,
+  createLinkedSymlinks,
+  getLinkedPaths,
+} from "./link-helpers.js";
 import { parsePorcelain } from "./parsers.js";
 
 export class LinkCommand {
@@ -55,5 +59,7 @@ export class LinkCommand {
         linkedPath,
       );
     }
+
+    await allowLinkedPathsInOpencode(projectRoot, pathsToLink);
   }
 }

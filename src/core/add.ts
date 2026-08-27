@@ -64,6 +64,35 @@ export class AddCommand {
       await git(["worktree", "add", worktreePath, options.branch], cwd);
     }
 
+    if (!options.new) {
+      // Sync the new worktree with the remote so it is not created stale.
+      // Merge against origin/<branch> directly: local branches created by a
+      // bare clone usually have no upstream configured, so `git pull` fails.
+      try {
+        await git(["fetch", "origin"], cwd);
+      } catch {
+        // No remote or network error; nothing to sync with.
+      }
+      if (await refExists(cwd, `refs/remotes/origin/${options.branch}`)) {
+        try {
+          await git(
+            [
+              "-C",
+              worktreePath,
+              "merge",
+              "--ff-only",
+              `origin/${options.branch}`,
+            ],
+            cwd,
+          );
+        } catch {
+          process.stderr.write(
+            `Warning: could not fast-forward '${options.branch}' to origin; the worktree may be outdated.\n`,
+          );
+        }
+      }
+    }
+
     const linked = await getLinkedPaths(cwd);
     for (const linkedPath of linked) {
       await createLinkedSymlinks(projectRoot, [worktreePath], linkedPath);
