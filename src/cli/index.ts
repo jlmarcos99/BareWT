@@ -14,6 +14,7 @@ import { RemoveCommand } from "../core/remove.js";
 import { UnlinkCommand } from "../core/unlink.js";
 import { UnprotectCommand } from "../core/unprotect.js";
 import { WipeCommand } from "../core/wipe.js";
+import { createSpinner } from "../utils/index.js";
 
 function resolvePackageRoot(fromDir: string): string {
   let dir = fromDir;
@@ -85,9 +86,17 @@ program
   .action(async (repo: string, name?: string) => {
     try {
       const cmd = new CloneCommand();
-      const bareDir = await cmd.execute(
-        name === undefined ? { repo } : { repo, name },
-      );
+      const spinner = createSpinner("Cloning repository…");
+      let bareDir: string;
+      try {
+        bareDir = await cmd.execute(
+          name === undefined ? { repo } : { repo, name },
+        );
+      } catch (error) {
+        spinner.fail();
+        throw error;
+      }
+      spinner.succeed("Repository cloned");
       process.stdout.write(`Cloned into ${bareDir}\n`);
       process.stdout.write("To get started, move into the project:\n");
       process.stdout.write(`  cd ${bareDir}\n`);
@@ -118,7 +127,15 @@ program
         };
         if (options.new) opts.new = true;
         if (origin !== undefined) opts.origin = origin;
-        const path = await cmd.execute(process.cwd(), opts);
+        const spinner = createSpinner(`Adding worktree for ${branch}…`);
+        let path: string;
+        try {
+          path = await cmd.execute(process.cwd(), opts);
+        } catch (error) {
+          spinner.fail();
+          throw error;
+        }
+        spinner.succeed(`Worktree added for ${branch}`);
         const relPath = relative(process.cwd(), path);
         process.stdout.write(`Added worktree at ${relPath}\n`);
         process.stdout.write(`To start working: cd ${relPath}\n`);
@@ -185,10 +202,18 @@ program
   .action(async (branch: string, options: { force?: boolean }) => {
     try {
       const cmd = new RemoveCommand();
-      const path = await cmd.execute(process.cwd(), {
-        branch,
-        ...(options.force ? { force: true as const } : {}),
-      });
+      const spinner = createSpinner(`Removing worktree ${branch}…`);
+      let path: string;
+      try {
+        path = await cmd.execute(process.cwd(), {
+          branch,
+          ...(options.force ? { force: true as const } : {}),
+        });
+      } catch (error) {
+        spinner.fail();
+        throw error;
+      }
+      spinner.succeed(`Worktree ${branch} removed`);
       process.stdout.write(
         `Removed worktree at ${relative(process.cwd(), path)}\n`,
       );
