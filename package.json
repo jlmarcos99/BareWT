@@ -1,6 +1,6 @@
 {
   "name": "barewt",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "CLI for git worktrees using the bare clone pattern",
   "keywords": [
     "git",
