@@ -97,6 +97,45 @@ describe("LinkCommand", () => {
     expect(stat.isSymbolicLink()).toBe(true);
   });
 
+  it("whitelists the linked path in opencode.json", async () => {
+    fixture = await createFixtureRepo();
+
+    const projectRoot = dirname(fixture.bareDir);
+    const sharedDir = join(projectRoot, "shared");
+    mkdirSync(sharedDir, { recursive: true });
+
+    const cmd = new LinkCommand();
+    await cmd.execute(fixture.bareDir, "shared");
+
+    const config = JSON.parse(
+      readFileSync(join(projectRoot, "opencode.json"), "utf-8"),
+    );
+    const external = config.permission.external_directory;
+    expect(external[sharedDir]).toBe("allow");
+    expect(external[join(sharedDir, "**")]).toBe("allow");
+  });
+
+  it("merges into an existing opencode.json", async () => {
+    fixture = await createFixtureRepo();
+
+    const projectRoot = dirname(fixture.bareDir);
+    const sharedDir = join(projectRoot, "shared");
+    mkdirSync(sharedDir, { recursive: true });
+    writeFileSync(
+      join(projectRoot, "opencode.json"),
+      JSON.stringify({ model: "anthropic/claude" }),
+    );
+
+    const cmd = new LinkCommand();
+    await cmd.execute(fixture.bareDir, "shared");
+
+    const config = JSON.parse(
+      readFileSync(join(projectRoot, "opencode.json"), "utf-8"),
+    );
+    expect(config.model).toBe("anthropic/claude");
+    expect(config.permission.external_directory[sharedDir]).toBe("allow");
+  });
+
   it("throws when not in a bare repository", async () => {
     fixture = await createFixtureRepo();
 

@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync } from "node:fs";
 import { lstat } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { execa } from "execa";
@@ -51,5 +51,23 @@ describe("UnlinkCommand", () => {
       { reject: false },
     );
     expect(stdout.trim()).toBe("");
+  });
+
+  it("removes the path from opencode.json whitelist", async () => {
+    fixture = await createFixtureRepo();
+
+    const projectRoot = dirname(fixture.bareDir);
+    mkdirSync(join(projectRoot, "shared"), { recursive: true });
+
+    const linkCmd = new LinkCommand();
+    await linkCmd.execute(fixture.bareDir, "shared");
+
+    const unlinkCmd = new UnlinkCommand();
+    await unlinkCmd.execute(fixture.bareDir, "shared");
+
+    const config = JSON.parse(
+      readFileSync(join(projectRoot, "opencode.json"), "utf-8"),
+    );
+    expect(config.permission.external_directory).toEqual({});
   });
 });

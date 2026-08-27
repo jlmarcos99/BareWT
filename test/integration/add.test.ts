@@ -1,4 +1,11 @@
-import { mkdirSync, mkdtempSync, realpathSync, rmSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "node:fs";
 import { lstat } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -208,5 +215,68 @@ describe("AddCommand", () => {
     const linkPath = join(projectRoot, "main", "shared");
     const stat = await lstat(linkPath);
     expect(stat.isSymbolicLink()).toBe(true);
+  });
+
+  it("fast-forwards the new worktree to the remote branch", async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
+    tmpDir = base;
+    prevCwd = cwd();
+    chdir(base);
+
+    const { bareDir } = await initBareWithRemotes(base);
+
+    // Advance feature/login on the remote after the bare clone was made.
+    const repoDir = join(base, "repo");
+    await execa(
+      "git",
+      ["-C", repoDir, "commit", "-m", "more", "--allow-empty"],
+      {
+        env,
+      },
+    );
+
+    const cmd = new AddCommand();
+    const worktreeDir = await cmd.execute(bareDir, {
+      branch: "feature/login",
+    });
+
+    const { stdout } = await execa("git", [
+      "-C",
+      worktreeDir,
+      "rev-list",
+      "--count",
+      "HEAD",
+    ]);
+    expect(Number(stdout.trim())).toBe(3);
+  });
+
+  it("creates working symlinks for nested linked paths", async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
+    tmpDir = base;
+    prevCwd = cwd();
+    chdir(base);
+
+    const { bareDir } = await initBareWithRemotes(base);
+
+    const projectRoot = join(base, "proj");
+    const nestedSource = join(projectRoot, "config", "secrets");
+    mkdirSync(nestedSource, { recursive: true });
+    writeFileSync(join(nestedSource, "key.txt"), "secret");
+    await execa("git", [
+      "-C",
+      bareDir,
+      "config",
+      "--add",
+      "bwt.linked",
+      "config/secrets",
+    ]);
+
+    const cmd = new AddCommand();
+    await cmd.execute(bareDir, { branch: "main" });
+
+    const linkPath = join(projectRoot, "main", "config", "secrets");
+    const stat = await lstat(linkPath);
+    expect(stat.isSymbolicLink()).toBe(true);
+    expect(readFileSync(join(linkPath, "key.txt"), "utf-8")).toBe("secret");
   });
 });
