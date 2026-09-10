@@ -42,7 +42,12 @@ export class PruneCommand {
       const wt = worktrees.find((w) => w.branch === branch);
       if (!wt) {
         if (!options.keepBranches) {
+          if (options.dryRun) {
+            results.push(`would delete branch ${branch} (no worktree)`);
+            continue;
+          }
           await git(["branch", "-D", branch], cwd);
+          results.push(`deleted branch ${branch}`);
         }
         continue;
       }

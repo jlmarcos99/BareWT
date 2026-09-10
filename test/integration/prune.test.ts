@@ -113,6 +113,57 @@ describe("PruneCommand", () => {
     expect(results.some((r) => r.startsWith("deleted branch"))).toBe(false);
   });
 
+  it("does not delete worktree-less gone branches in dry-run mode", async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
+    cleanupDir = base;
+
+    const repoDir = join(base, "repo");
+    await execa("git", ["init", "-b", "main", repoDir]);
+    await execa(
+      "git",
+      ["-C", repoDir, "commit", "-m", "init", "--allow-empty"],
+      {
+        env,
+      },
+    );
+    await execa("git", ["-C", repoDir, "checkout", "-b", "feat/gone"]);
+    await execa("git", ["-C", repoDir, "checkout", "main"]);
+
+    const bareDir = join(base, "proj", ".git");
+    mkdirSync(join(base, "proj"), { recursive: true });
+    await execa("git", ["clone", "--bare", repoDir, bareDir]);
+    await execa("git", [
+      "-C",
+      bareDir,
+      "config",
+      "remote.origin.fetch",
+      "+refs/heads/*:refs/remotes/origin/*",
+    ]);
+    await execa("git", ["-C", bareDir, "fetch", "--all"]);
+    await execa("git", [
+      "-C",
+      bareDir,
+      "branch",
+      "--set-upstream-to=origin/feat/gone",
+      "feat/gone",
+    ]);
+
+    await execa("git", ["-C", repoDir, "branch", "-D", "feat/gone"]);
+
+    const cmd = new PruneCommand();
+    const results = await cmd.execute(bareDir, { dryRun: true });
+
+    expect(results).toContain("would delete branch feat/gone (no worktree)");
+    const branches = await execa("git", [
+      "-C",
+      bareDir,
+      "branch",
+      "--list",
+      "feat/gone",
+    ]);
+    expect(branches.stdout.trim()).toBe("feat/gone");
+  });
+
   it("throws when not in a bare repository", async () => {
     const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
     cleanupDir = base;

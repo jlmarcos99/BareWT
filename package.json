@@ -1,6 +1,6 @@
 {
   "name": "barewt",
-  "version": "0.0.0",
+  "version": "0.1.1",
   "description": "CLI for git worktrees using the bare clone pattern",
   "keywords": [
     "git",
@@ -12,7 +12,7 @@
   "author": "jmarcos <joseluespp@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CAMBIAME/barewt.git"
+    "url": "git+https://github.com/jlmarcos99/BareWT.git"
   },
   "type": "module",
   "bin": {
@@ -35,7 +35,7 @@
     "lint:fix": "biome check --write .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "verify": "npm run typecheck && npm run lint && npm run test && npm run build",
+    "verify": "npm run typecheck && npm run lint && npm run build && npm run test",
     "changeset": "changeset",
     "release": "npm run build && changeset publish"
   },

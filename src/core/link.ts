@@ -1,7 +1,7 @@
 import { stat } from "node:fs/promises";
-import { isAbsolute, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
 import { appendToInfoExclude } from "../utils/file-system.js";
-import { ensureBareRepository, git } from "../utils/git.js";
+import { ensureBareRepository, getCommonDir, git } from "../utils/git.js";
 import { CliError } from "./errors.js";
 import {
   allowLinkedPathsInOpencode,
@@ -26,9 +26,8 @@ export class LinkCommand {
       return paths;
     }
 
-    const gitDir = await git(["rev-parse", "--git-dir"], cwd);
-    const absGitDir = isAbsolute(gitDir) ? gitDir : resolve(cwd, gitDir);
-    const projectRoot = resolve(absGitDir, "..");
+    const commonDir = await getCommonDir(cwd);
+    const projectRoot = resolve(commonDir, "..");
 
     if (!syncOnly && path) {
       const sourcePath = join(projectRoot, path);
@@ -42,7 +41,7 @@ export class LinkCommand {
         );
       }
 
-      await appendToInfoExclude(absGitDir, path);
+      await appendToInfoExclude(commonDir, path);
       await git(["config", "--add", "bwt.linked", path], cwd);
     }
 

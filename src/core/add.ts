@@ -1,5 +1,10 @@
-import { isAbsolute, join, resolve } from "node:path";
-import { ensureBareRepository, git, refExists } from "../utils/git.js";
+import { join, resolve } from "node:path";
+import {
+  ensureBareRepository,
+  getCommonDir,
+  git,
+  refExists,
+} from "../utils/git.js";
 import { CliError } from "./errors.js";
 import { createLinkedSymlinks, getLinkedPaths } from "./link-helpers.js";
 import { parsePorcelain } from "./parsers.js";
@@ -14,9 +19,8 @@ export class AddCommand {
   async execute(cwd: string, options: AddOptions): Promise<string> {
     await ensureBareRepository(cwd);
 
-    const gitDir = await git(["rev-parse", "--git-dir"], cwd);
-    const absGitDir = isAbsolute(gitDir) ? gitDir : resolve(cwd, gitDir);
-    const projectRoot = resolve(absGitDir, "..");
+    const commonDir = await getCommonDir(cwd);
+    const projectRoot = resolve(commonDir, "..");
     const worktreePath = join(projectRoot, options.branch);
 
     const existing = await git(["worktree", "list", "--porcelain"], cwd);

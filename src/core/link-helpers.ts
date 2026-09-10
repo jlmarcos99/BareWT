@@ -1,5 +1,17 @@
-import { mkdir, readFile, rm, symlink, writeFile } from "node:fs/promises";
-import { dirname, join, relative } from "node:path";
+import { randomBytes } from "node:crypto";
+import {
+  link,
+  lstat,
+  mkdir,
+  readFile,
+  readlink,
+  rename,
+  rm,
+  stat,
+  symlink,
+  writeFile,
+} from "node:fs/promises";
+import { dirname, join, relative, resolve } from "node:path";
 import { git } from "../utils/git.js";
 
 export async function getLinkedPaths(cwd: string): Promise<string[]> {
@@ -20,6 +32,25 @@ export async function createLinkedSymlinks(
   linkedPath: string,
 ): Promise<void> {
   const source = join(projectRoot, linkedPath);
+  const isDirectory = (await stat(source)).isDirectory();
+
+  const createLink = async (linkPath: string, relTarget: string) => {
+    if (isDirectory) {
+      // "junction" avoids the symlink privilege requirement on Windows
+      // (junctions store an absolute target); ignored on other platforms
+      await symlink(relTarget, linkPath, "junction");
+      return;
+    }
+
+    try {
+      await symlink(relTarget, linkPath, "file");
+    } catch (error) {
+      // Windows without symlink privilege (no Developer Mode / admin):
+      // fall back to a hard link, which needs no privilege
+      if ((error as NodeJS.ErrnoException).code !== "EPERM") throw error;
+      await link(source, linkPath);
+    }
+  };
 
   for (const wtPath of worktreePaths) {
     const linkPath = join(wtPath, linkedPath);
@@ -28,9 +59,42 @@ export async function createLinkedSymlinks(
     const relTarget = relative(dirname(linkPath), source);
 
     await mkdir(dirname(linkPath), { recursive: true });
-    await rm(linkPath, { recursive: true, force: true });
 
-    await symlink(relTarget, linkPath);
+    // lstat does not follow symlinks, so a link is never mistaken for
+    // the real content it points to.
+    const existing = await lstat(linkPath).catch(() => null);
+
+    if (existing && !existing.isSymbolicLink()) {
+      throw new Error(
+        `Refusing to replace real ${
+          existing.isDirectory() ? "directory" : "file"
+        } at ${linkPath}; move it aside and retry.`,
+      );
+    }
+
+    if (existing) {
+      const currentTarget = await readlink(linkPath);
+      // "junction" symlinks store an absolute target, so also compare
+      // after resolving against the link's directory.
+      const resolvedTarget = resolve(dirname(linkPath), currentTarget);
+      if (currentTarget === relTarget || resolvedTarget === source) continue;
+
+      // Stale or wrong link: move it aside first so it can be restored
+      // if creating the replacement fails.
+      const backup = `${linkPath}.bwt-${randomBytes(4).toString("hex")}.bak`;
+      await rename(linkPath, backup);
+      try {
+        await createLink(linkPath, relTarget);
+      } catch (error) {
+        await rm(linkPath, { force: true }).catch(() => {});
+        await rename(backup, linkPath);
+        throw error;
+      }
+      await rm(backup, { force: true });
+      continue;
+    }
+
+    await createLink(linkPath, relTarget);
   }
 }
 
@@ -42,6 +106,36 @@ interface OpencodeConfig {
   [key: string]: unknown;
 }
 
+// Reads opencode.json. Returns null when the file does not exist, throws
+// when it exists but is invalid, so a broken config is never overwritten.
+async function readOpencodeConfig(
+  configPath: string,
+): Promise<OpencodeConfig | null> {
+  let raw: string;
+  try {
+    raw = await readFile(configPath, "utf-8");
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
+    throw error;
+  }
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      !Array.isArray(parsed)
+    ) {
+      return parsed as OpencodeConfig;
+    }
+  } catch {
+    // fall through to the error below
+  }
+  throw new Error(
+    `${configPath} contains invalid JSON; fix or remove it before linking.`,
+  );
+}
+
 // Linked paths point outside each worktree, which trips opencode's
 // external_directory permission. Whitelist them in the project opencode.json.
 export async function allowLinkedPathsInOpencode(
@@ -51,19 +145,7 @@ export async function allowLinkedPathsInOpencode(
   if (linkedPaths.length === 0) return;
 
   const configPath = join(projectRoot, "opencode.json");
-  let config: OpencodeConfig = {};
-  try {
-    const parsed: unknown = JSON.parse(await readFile(configPath, "utf-8"));
-    if (
-      typeof parsed === "object" &&
-      parsed !== null &&
-      !Array.isArray(parsed)
-    ) {
-      config = parsed as OpencodeConfig;
-    }
-  } catch {
-    // Missing or invalid file: start fresh.
-  }
+  const config: OpencodeConfig = (await readOpencodeConfig(configPath)) ?? {};
 
   if (!config.permission) config.permission = {};
   if (!config.permission.external_directory) {

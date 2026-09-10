@@ -78,6 +78,25 @@ describe("AddCommand", () => {
     expect(stdout.trim()).toBe("true");
   });
 
+  it("runs from inside an existing worktree", async () => {
+    const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
+    tmpDir = base;
+    prevCwd = cwd();
+    chdir(base);
+
+    const { bareDir } = await initBareWithRemotes(base);
+
+    const cmd = new AddCommand();
+    await cmd.execute(bareDir, { branch: "main" });
+
+    const mainWorktree = join(base, "proj", "main");
+    const returnedPath = await new AddCommand().execute(mainWorktree, {
+      branch: "feature/login",
+    });
+
+    expect(returnedPath).toBe(join(base, "proj", "feature", "login"));
+  });
+
   it("adds a worktree for a branch with slashes", async () => {
     const base = realpathSync(mkdtempSync(join(tmpdir(), "bwt-test-")));
     tmpDir = base;
