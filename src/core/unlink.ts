@@ -1,6 +1,6 @@
 import { rm } from "node:fs/promises";
-import { isAbsolute, join, resolve } from "node:path";
-import { ensureBareRepository, git } from "../utils/git.js";
+import { join, resolve } from "node:path";
+import { ensureBareRepository, getCommonDir, git } from "../utils/git.js";
 import { denyLinkedPathInOpencode } from "./link-helpers.js";
 import { parsePorcelain } from "./parsers.js";
 
@@ -18,8 +18,7 @@ export class UnlinkCommand {
 
     await git(["config", "--unset-all", "bwt.linked", path], cwd);
 
-    const gitDir = await git(["rev-parse", "--git-dir"], cwd);
-    const absGitDir = isAbsolute(gitDir) ? gitDir : resolve(cwd, gitDir);
-    await denyLinkedPathInOpencode(resolve(absGitDir, ".."), path);
+    const commonDir = await getCommonDir(cwd);
+    await denyLinkedPathInOpencode(resolve(commonDir, ".."), path);
   }
 }

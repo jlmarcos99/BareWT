@@ -151,6 +151,23 @@ describe("LinkCommand", () => {
     expect(config.permission.external_directory[sharedDir]).toBe("allow");
   });
 
+  it("fails without overwriting an invalid opencode.json", async () => {
+    fixture = await createFixtureRepo();
+
+    const projectRoot = dirname(fixture.bareDir);
+    const configPath = join(projectRoot, "opencode.json");
+    writeFileSync(configPath, "{ not valid json");
+    const sharedDir = join(projectRoot, "shared");
+    mkdirSync(sharedDir, { recursive: true });
+
+    const cmd = new LinkCommand();
+    await expect(cmd.execute(fixture.bareDir, "shared")).rejects.toThrow(
+      "invalid JSON",
+    );
+
+    expect(readFileSync(configPath, "utf-8")).toBe("{ not valid json");
+  });
+
   it("throws when not in a bare repository", async () => {
     fixture = await createFixtureRepo();
 
